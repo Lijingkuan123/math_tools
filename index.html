@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#17332d">
+  <meta name="description" content="九九乘法表计时测试、错题复习与学习记录">
+  <title>乘法小站</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="#home" aria-label="乘法小站首页">
+      <span class="brand-mark" aria-hidden="true">×</span>
+      <span>
+        <strong>乘法小站</strong>
+        <small>九九乘法计时练习</small>
+      </span>
+    </a>
+    <button class="share-button" id="shareButton" type="button">
+      <span aria-hidden="true">↗</span>
+      分享练习
+    </button>
+  </header>
+
+  <main class="app-shell">
+    <section class="view home-view" id="homeView" data-view="home">
+      <div class="practice-intro">
+        <div class="intro-copy">
+          <p class="eyebrow">今日练习</p>
+          <h1>准备好，开始一轮乘法测试</h1>
+          <p>从 1～9 的乘法中随机出题，提交后立即查看结果和错题。</p>
+        </div>
+        <div class="number-board" aria-hidden="true">
+          <span>3</span><span>×</span><span>7</span>
+          <span>9</span><span>=</span><span>21</span>
+        </div>
+      </div>
+
+      <div class="start-panel" aria-labelledby="startHeading">
+        <div class="panel-heading">
+          <div>
+            <h2 id="startHeading">选择题量</h2>
+            <p>本轮开始后计时，刷新页面仍可继续。</p>
+          </div>
+          <div class="count-control" role="radiogroup" aria-label="测试题量">
+            <label>
+              <input type="radio" name="questionCount" value="10" checked>
+              <span>10 题</span>
+            </label>
+            <label>
+              <input type="radio" name="questionCount" value="20">
+              <span>20 题</span>
+            </label>
+          </div>
+        </div>
+        <div class="start-actions">
+          <button class="button primary" id="startTestButton" type="button">开始测试</button>
+          <button class="button secondary" id="resumeTestButton" type="button" hidden>继续上次答题</button>
+        </div>
+      </div>
+
+      <div class="summary-strip" aria-label="学习概览">
+        <div>
+          <span>累计测试</span>
+          <strong id="totalTestsStat">0</strong>
+          <small>次</small>
+        </div>
+        <div>
+          <span>平均准确率</span>
+          <strong id="averageAccuracyStat">--</strong>
+          <small id="averageAccuracyUnit"></small>
+        </div>
+        <div>
+          <span>待复习错题</span>
+          <strong id="wrongCountStat">0</strong>
+          <small>题</small>
+        </div>
+      </div>
+
+      <section class="recent-section" aria-labelledby="recentHeading">
+        <div class="section-heading">
+          <div>
+            <h2 id="recentHeading">最近表现</h2>
+            <p>每一轮练习都会保存在当前设备。</p>
+          </div>
+          <button class="text-button" type="button" data-nav="history">查看全部</button>
+        </div>
+        <div class="empty-block" id="homeEmptyHistory">
+          完成第一轮测试后，这里会出现准确率和用时。
+        </div>
+        <div class="recent-history" id="recentHistory"></div>
+      </section>
+    </section>
+
+    <section class="view test-view" id="testView" data-view="test" hidden>
+      <div class="test-toolbar">
+        <button class="icon-button" id="leaveTestButton" type="button" aria-label="返回首页" title="返回首页">←</button>
+        <div class="test-meta">
+          <strong id="testTitle">乘法测试</strong>
+          <span id="answerProgress">已答 0 / 10</span>
+        </div>
+        <div class="timer" aria-label="答题用时">
+          <span aria-hidden="true">◷</span>
+          <strong id="timerValue">00:00</strong>
+        </div>
+      </div>
+
+      <form id="quizForm">
+        <div class="question-grid" id="questionGrid"></div>
+        <div class="submit-band">
+          <p id="submitHint">填写答案后提交答卷。</p>
+          <button class="button primary submit-button" type="submit">提交答卷</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="view result-view" id="resultView" data-view="result" hidden>
+      <div class="result-summary">
+        <div class="score-ring" id="scoreRing">
+          <strong id="resultScore">0%</strong>
+          <span>准确率</span>
+        </div>
+        <div class="result-copy">
+          <p class="eyebrow" id="resultEyebrow">本次成绩</p>
+          <h1 id="resultTitle">答卷已提交</h1>
+          <p id="resultDescription"></p>
+          <div class="result-facts">
+            <span><strong id="correctFact">0 / 10</strong> 答对</span>
+            <span><strong id="durationFact">00:00</strong> 用时</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <button class="button primary" id="newTestButton" type="button">再测一轮</button>
+        <button class="button secondary" id="reviewResultButton" type="button">复习本轮错题</button>
+      </div>
+
+      <section class="mistake-section" id="mistakeSection" aria-labelledby="mistakeHeading">
+        <div class="section-heading">
+          <div>
+            <h2 id="mistakeHeading">本轮错题</h2>
+            <p>错题已自动加入错题集。</p>
+          </div>
+        </div>
+        <div class="mistake-list" id="resultMistakes"></div>
+      </section>
+    </section>
+
+    <section class="view wrong-view" id="wrongView" data-view="wrong" hidden>
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">专项巩固</p>
+          <h1>错题集</h1>
+          <p>重做答对后，题目会自动移出错题集。</p>
+        </div>
+        <button class="button primary" id="reviewAllButton" type="button">复习全部错题</button>
+      </div>
+      <div class="empty-block large" id="wrongEmpty">
+        <strong>当前没有错题</strong>
+        <span>继续保持，完成测试后答错的题会出现在这里。</span>
+      </div>
+      <div class="wrong-list" id="wrongList"></div>
+    </section>
+
+    <section class="view history-view" id="historyView" data-view="history" hidden>
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">学习轨迹</p>
+          <h1>测试记录</h1>
+          <p>查看每次测试的准确率、答题数量和用时。</p>
+        </div>
+        <button class="button quiet-danger" id="clearHistoryButton" type="button">清空记录</button>
+      </div>
+
+      <div class="history-overview">
+        <div><span>测试次数</span><strong id="historyTestsStat">0</strong></div>
+        <div><span>总答题数</span><strong id="historyAnswersStat">0</strong></div>
+        <div><span>平均准确率</span><strong id="historyAccuracyStat">--</strong></div>
+        <div><span>最佳准确率</span><strong id="historyBestStat">--</strong></div>
+      </div>
+
+      <div class="empty-block large" id="historyEmpty">
+        <strong>还没有测试记录</strong>
+        <span>完成一轮测试后，可在这里回看成绩变化。</span>
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" id="bottomNav" aria-label="主要导航">
+    <button class="active" type="button" data-nav="home"><span aria-hidden="true">⌂</span>首页</button>
+    <button type="button" data-nav="wrong"><span aria-hidden="true">×</span>错题集<em id="wrongNavBadge" hidden>0</em></button>
+    <button type="button" data-nav="history"><span aria-hidden="true">▥</span>记录</button>
+  </nav>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <dialog class="confirm-dialog" id="confirmDialog">
+    <form method="dialog">
+      <h2 id="confirmTitle">确认操作</h2>
+      <p id="confirmMessage"></p>
+      <div class="dialog-actions">
+        <button class="button secondary" value="cancel">取消</button>
+        <button class="button primary" id="confirmAcceptButton" value="confirm">确认</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
