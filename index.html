@@ -60,6 +60,15 @@
         </div>
       </div>
 
+      <section class="community-strip" aria-labelledby="communityHeading">
+        <div class="cloud-state-icon" id="cloudStateIcon" aria-hidden="true">◎</div>
+        <div>
+          <h2 id="communityHeading">练习组排行</h2>
+          <p id="cloudHomeStatus">正在检查在线服务…</p>
+        </div>
+        <button class="button secondary" type="button" data-nav="ranking">查看排行</button>
+      </section>
+
       <div class="summary-strip" aria-label="学习概览">
         <div>
           <span>累计测试</span>
@@ -187,12 +196,121 @@
       </div>
       <div class="history-list" id="historyList"></div>
     </section>
+
+    <section class="view ranking-view" id="rankingView" data-view="ranking" hidden>
+      <div class="page-heading ranking-heading">
+        <div>
+          <p class="eyebrow">共同练习</p>
+          <h1>练习组排行</h1>
+          <p id="rankingSubtitle">创建或加入练习组，与朋友一起查看答题表现。</p>
+        </div>
+        <button class="button secondary" id="refreshRankingButton" type="button" hidden>刷新排行</button>
+      </div>
+
+      <div class="cloud-message" id="cloudLoading">
+        正在连接在线成绩服务…
+      </div>
+
+      <div class="cloud-message error" id="cloudDisabled" hidden>
+        <strong>在线排行尚未启用</strong>
+        <span>完成 Supabase 配置后，这里将显示练习组和排行榜。</span>
+      </div>
+
+      <div class="group-setup" id="groupSetup" hidden>
+        <form class="setup-panel" id="createGroupForm">
+          <div>
+            <h2>创建练习组</h2>
+            <p>生成邀请码，发给需要一起练习的人。</p>
+          </div>
+          <label>
+            练习组名称
+            <input id="createGroupName" type="text" minlength="2" maxlength="40"
+                   autocomplete="organization" placeholder="例如：三年二班" required>
+          </label>
+          <label>
+            我的昵称
+            <input id="createNickname" type="text" minlength="2" maxlength="20"
+                   autocomplete="nickname" placeholder="2～20个字符" required>
+          </label>
+          <button class="button primary" type="submit">创建并加入</button>
+        </form>
+
+        <form class="setup-panel" id="joinGroupForm">
+          <div>
+            <h2>加入练习组</h2>
+            <p>输入分享链接中的8位邀请码。</p>
+          </div>
+          <label>
+            邀请码
+            <input id="joinInviteCode" class="code-input" type="text" minlength="8" maxlength="8"
+                   autocomplete="off" spellcheck="false" placeholder="例如：A1B2C3D4" required>
+          </label>
+          <label>
+            我的昵称
+            <input id="joinNickname" type="text" minlength="2" maxlength="20"
+                   autocomplete="nickname" placeholder="2～20个字符" required>
+          </label>
+          <button class="button primary" type="submit">加入练习组</button>
+        </form>
+      </div>
+
+      <div id="groupDashboard" hidden>
+        <section class="group-banner" aria-label="当前练习组">
+          <div>
+            <span>当前练习组</span>
+            <strong id="activeGroupName">-</strong>
+            <small>我的昵称：<b id="activeNickname">-</b></small>
+          </div>
+          <div class="invite-code-block">
+            <span>邀请码</span>
+            <strong id="activeInviteCode">-</strong>
+          </div>
+          <div class="group-actions">
+            <button class="button secondary" id="shareGroupButton" type="button">分享练习组</button>
+            <button class="text-button danger" id="leaveGroupButton" type="button">退出当前组</button>
+          </div>
+        </section>
+
+        <section class="leaderboard-section" id="leaderboardSection" aria-labelledby="leaderboardHeading">
+          <div class="section-heading">
+            <div>
+              <h2 id="leaderboardHeading">答题排行榜</h2>
+              <p>按累计答对题数排名，准确率用于同分排序。</p>
+            </div>
+            <span class="update-time" id="rankingUpdatedAt"></span>
+          </div>
+          <div class="leaderboard-table" role="table" aria-label="练习组排行榜">
+            <div class="leaderboard-header" role="row">
+              <span>排名 / 用户</span><span>测试</span><span>答题</span><span>准确率</span><span>每题用时</span>
+            </div>
+            <div id="leaderboardList"></div>
+          </div>
+          <div class="empty-block" id="leaderboardEmpty" hidden>
+            组内还没有正式测试成绩，完成一轮测试后即可上榜。
+          </div>
+        </section>
+
+        <section class="member-history" id="memberHistory" hidden aria-labelledby="memberHistoryHeading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">用户记录</p>
+              <h2 id="memberHistoryHeading">历史表现</h2>
+              <p id="memberHistorySummary"></p>
+            </div>
+            <button class="icon-button" id="closeMemberHistoryButton" type="button"
+                    aria-label="关闭用户记录" title="关闭用户记录">×</button>
+          </div>
+          <div class="history-list" id="memberHistoryList"></div>
+        </section>
+      </div>
+    </section>
   </main>
 
   <nav class="bottom-nav" id="bottomNav" aria-label="主要导航">
     <button class="active" type="button" data-nav="home"><span aria-hidden="true">⌂</span>首页</button>
     <button type="button" data-nav="wrong"><span aria-hidden="true">×</span>错题集<em id="wrongNavBadge" hidden>0</em></button>
     <button type="button" data-nav="history"><span aria-hidden="true">▥</span>记录</button>
+    <button type="button" data-nav="ranking"><span aria-hidden="true">♜</span>排行</button>
   </nav>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
@@ -208,6 +326,9 @@
     </form>
   </dialog>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js" defer></script>
+  <script src="./supabase-config.js" defer></script>
+  <script src="./supabase-service.js" defer></script>
   <script src="./app.js" defer></script>
 </body>
 </html>

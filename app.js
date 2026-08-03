@@ -19,6 +19,8 @@ const elements = {
   averageAccuracyUnit: document.querySelector("#averageAccuracyUnit"),
   wrongCount: document.querySelector("#wrongCountStat"),
   wrongNavBadge: document.querySelector("#wrongNavBadge"),
+  cloudStateIcon: document.querySelector("#cloudStateIcon"),
+  cloudHomeStatus: document.querySelector("#cloudHomeStatus"),
   homeEmptyHistory: document.querySelector("#homeEmptyHistory"),
   recentHistory: document.querySelector("#recentHistory"),
   leaveTest: document.querySelector("#leaveTestButton"),
@@ -49,6 +51,31 @@ const elements = {
   historyBest: document.querySelector("#historyBestStat"),
   historyEmpty: document.querySelector("#historyEmpty"),
   historyList: document.querySelector("#historyList"),
+  rankingSubtitle: document.querySelector("#rankingSubtitle"),
+  refreshRanking: document.querySelector("#refreshRankingButton"),
+  cloudLoading: document.querySelector("#cloudLoading"),
+  cloudDisabled: document.querySelector("#cloudDisabled"),
+  groupSetup: document.querySelector("#groupSetup"),
+  createGroupForm: document.querySelector("#createGroupForm"),
+  createGroupName: document.querySelector("#createGroupName"),
+  createNickname: document.querySelector("#createNickname"),
+  joinGroupForm: document.querySelector("#joinGroupForm"),
+  joinInviteCode: document.querySelector("#joinInviteCode"),
+  joinNickname: document.querySelector("#joinNickname"),
+  groupDashboard: document.querySelector("#groupDashboard"),
+  activeGroupName: document.querySelector("#activeGroupName"),
+  activeNickname: document.querySelector("#activeNickname"),
+  activeInviteCode: document.querySelector("#activeInviteCode"),
+  shareGroup: document.querySelector("#shareGroupButton"),
+  leaveGroup: document.querySelector("#leaveGroupButton"),
+  rankingUpdatedAt: document.querySelector("#rankingUpdatedAt"),
+  leaderboardList: document.querySelector("#leaderboardList"),
+  leaderboardEmpty: document.querySelector("#leaderboardEmpty"),
+  memberHistory: document.querySelector("#memberHistory"),
+  memberHistoryHeading: document.querySelector("#memberHistoryHeading"),
+  memberHistorySummary: document.querySelector("#memberHistorySummary"),
+  memberHistoryList: document.querySelector("#memberHistoryList"),
+  closeMemberHistory: document.querySelector("#closeMemberHistoryButton"),
   toast: document.querySelector("#toast"),
   confirmDialog: document.querySelector("#confirmDialog"),
   confirmTitle: document.querySelector("#confirmTitle"),
@@ -63,6 +90,15 @@ const state = {
   active: readStorage(STORAGE_KEYS.active, null),
   lastResult: null,
   timerHandle: 0,
+  cloud: {
+    loading: true,
+    configured: false,
+    ready: false,
+    group: null,
+    participants: [],
+    attempts: [],
+    error: "",
+  },
 };
 
 function readStorage(key, fallback) {
@@ -158,7 +194,7 @@ function showView(viewName) {
   }
   elements.bottomNav.hidden = viewName === "test";
 
-  if (["home", "wrong", "history"].includes(viewName)) {
+  if (["home", "wrong", "history", "ranking"].includes(viewName)) {
     const hash = `#${viewName}`;
     if (location.hash !== hash) history.replaceState(null, "", hash);
   }
@@ -166,6 +202,7 @@ function showView(viewName) {
   if (viewName === "home") renderHome();
   if (viewName === "wrong") renderWrongBook();
   if (viewName === "history") renderHistory();
+  if (viewName === "ranking") renderRanking();
   if (viewName === "test") {
     renderQuiz();
     startTimer();
@@ -386,6 +423,7 @@ async function submitQuiz(event) {
   renderResult();
   showView("result");
   updateGlobalBadges();
+  syncResultOnline(result);
 }
 
 function renderResult() {
@@ -442,6 +480,7 @@ function renderHome() {
   for (const item of state.history.slice(0, 3)) {
     elements.recentHistory.append(createHistoryRow(item));
   }
+  renderCloudHomeStatus();
   updateGlobalBadges();
 }
 
@@ -514,6 +553,305 @@ function renderHistory() {
   for (const item of state.history) elements.historyList.append(createHistoryRow(item));
 }
 
+function cloudService() {
+  return globalThis.MathToolsCloud || null;
+}
+
+function pendingInviteCode() {
+  return (new URLSearchParams(location.search).get("group") || "")
+    .trim()
+    .toUpperCase()
+    .slice(0, 8);
+}
+
+function applyCloudSnapshot(snapshot) {
+  state.cloud.configured = Boolean(snapshot?.configured);
+  state.cloud.ready = Boolean(snapshot?.ready);
+  state.cloud.group = snapshot?.group || null;
+  state.cloud.loading = false;
+  renderCloudHomeStatus();
+}
+
+async function initializeCloud() {
+  const service = cloudService();
+  if (!service) {
+    state.cloud.loading = false;
+    state.cloud.error = "在线服务脚本加载失败";
+    renderCloudHomeStatus();
+    if (state.view === "ranking") renderRanking();
+    return;
+  }
+  try {
+    applyCloudSnapshot(await service.init());
+    if (state.cloud.group) await refreshRankingData(false);
+  } catch (error) {
+    state.cloud.loading = false;
+    state.cloud.configured = service.snapshot().configured;
+    state.cloud.error = error.message || "在线服务连接失败";
+    renderCloudHomeStatus();
+  }
+  if (state.view === "ranking") renderRanking();
+}
+
+function renderCloudHomeStatus() {
+  elements.cloudStateIcon.classList.toggle("connected", Boolean(state.cloud.group));
+  if (state.cloud.loading) {
+    elements.cloudHomeStatus.textContent = "正在检查在线服务…";
+  } else if (!state.cloud.configured) {
+    elements.cloudHomeStatus.textContent = "当前使用本机记录，在线排行尚未配置。";
+  } else if (state.cloud.error) {
+    elements.cloudHomeStatus.textContent = "在线服务暂时不可用，本机练习不受影响。";
+  } else if (state.cloud.group) {
+    elements.cloudHomeStatus.textContent = `已加入「${state.cloud.group.name}」，成绩将同步到排行。`;
+  } else {
+    elements.cloudHomeStatus.textContent = "创建或加入练习组后即可同步成绩。";
+  }
+}
+
+function renderRanking() {
+  elements.cloudLoading.hidden = !state.cloud.loading;
+  elements.cloudDisabled.hidden = state.cloud.loading || state.cloud.configured;
+  elements.groupSetup.hidden = state.cloud.loading
+    || !state.cloud.configured
+    || Boolean(state.cloud.group);
+  elements.groupDashboard.hidden = !state.cloud.group;
+  elements.refreshRanking.hidden = !state.cloud.group;
+
+  if (!state.cloud.configured && state.cloud.error) {
+    elements.cloudDisabled.querySelector("span").textContent = state.cloud.error;
+  }
+  const inviteCode = pendingInviteCode();
+  if (inviteCode && !state.cloud.group) elements.joinInviteCode.value = inviteCode;
+  if (!state.cloud.group) return;
+
+  const group = state.cloud.group;
+  elements.activeGroupName.textContent = group.name;
+  elements.activeNickname.textContent = group.nickname;
+  elements.activeInviteCode.textContent = group.inviteCode;
+  elements.rankingSubtitle.textContent = `${group.name} · 点击用户可查看其历史记录`;
+  renderLeaderboard();
+}
+
+function setGroupFormsBusy(busy) {
+  for (const form of [elements.createGroupForm, elements.joinGroupForm]) {
+    for (const control of form.elements) control.disabled = busy;
+  }
+}
+
+async function handleCreateGroup(event) {
+  event.preventDefault();
+  if (!cloudService()) return;
+  setGroupFormsBusy(true);
+  try {
+    const snapshot = await cloudService().createGroup(
+      elements.createGroupName.value.trim(),
+      elements.createNickname.value.trim(),
+    );
+    applyCloudSnapshot(snapshot);
+    updateGroupQuery(snapshot.group.inviteCode);
+    state.cloud.error = "";
+    showToast("练习组已创建");
+    await refreshRankingData();
+  } catch (error) {
+    showToast(error.message || "创建练习组失败");
+  } finally {
+    setGroupFormsBusy(false);
+    renderRanking();
+  }
+}
+
+async function handleJoinGroup(event) {
+  event.preventDefault();
+  if (!cloudService()) return;
+  setGroupFormsBusy(true);
+  try {
+    const snapshot = await cloudService().joinGroup(
+      elements.joinInviteCode.value.trim().toUpperCase(),
+      elements.joinNickname.value.trim(),
+    );
+    applyCloudSnapshot(snapshot);
+    updateGroupQuery(snapshot.group.inviteCode);
+    state.cloud.error = "";
+    showToast(`已加入「${snapshot.group.name}」`);
+    await refreshRankingData();
+  } catch (error) {
+    showToast(error.message || "加入练习组失败");
+  } finally {
+    setGroupFormsBusy(false);
+    renderRanking();
+  }
+}
+
+function updateGroupQuery(inviteCode) {
+  const url = new URL(location.href);
+  if (inviteCode) url.searchParams.set("group", inviteCode);
+  else url.searchParams.delete("group");
+  history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+async function leaveCurrentGroup() {
+  const confirmed = await confirmAction(
+    "退出当前练习组？",
+    "本机测试和错题不会删除，但之后的新成绩不会同步到这个练习组。",
+    "确认退出",
+  );
+  if (!confirmed) return;
+  applyCloudSnapshot(cloudService().leaveGroup());
+  state.cloud.participants = [];
+  state.cloud.attempts = [];
+  elements.memberHistory.hidden = true;
+  updateGroupQuery("");
+  renderRanking();
+  showToast("已退出当前练习组");
+}
+
+async function refreshRankingData(showFeedback = true) {
+  if (!state.cloud.group || !cloudService()) return;
+  elements.refreshRanking.disabled = true;
+  try {
+    await cloudService().flushPending();
+    const data = await cloudService().loadGroupData();
+    state.cloud.participants = data.participants;
+    state.cloud.attempts = data.attempts;
+    state.cloud.error = "";
+    elements.rankingUpdatedAt.textContent = `更新于 ${new Intl.DateTimeFormat("zh-CN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date())}`;
+    if (showFeedback) showToast("排行榜已更新");
+  } catch (error) {
+    state.cloud.error = error.message || "排行榜加载失败";
+    if (showFeedback) showToast("排行榜加载失败，请稍后重试");
+  } finally {
+    elements.refreshRanking.disabled = false;
+    if (state.view === "ranking") renderLeaderboard();
+  }
+}
+
+function leaderboardEntries() {
+  return state.cloud.participants.map((participant) => {
+    const attempts = state.cloud.attempts.filter(
+      (attempt) => attempt.participant_id === participant.id
+        && attempt.attempt_type === "test",
+    );
+    const totalQuestions = attempts.reduce((sum, item) => sum + item.question_count, 0);
+    const totalCorrect = attempts.reduce((sum, item) => sum + item.correct_count, 0);
+    const totalDuration = attempts.reduce((sum, item) => sum + item.duration_seconds, 0);
+    return {
+      participant,
+      tests: attempts.length,
+      totalQuestions,
+      totalCorrect,
+      accuracy: totalQuestions ? Math.round(totalCorrect / totalQuestions * 100) : 0,
+      secondsPerQuestion: totalQuestions ? totalDuration / totalQuestions : 0,
+    };
+  }).sort((left, right) => (
+    right.totalCorrect - left.totalCorrect
+      || right.accuracy - left.accuracy
+      || right.totalQuestions - left.totalQuestions
+      || left.participant.created_at.localeCompare(right.participant.created_at)
+  ));
+}
+
+function renderLeaderboard() {
+  const entries = leaderboardEntries();
+  const hasScores = entries.some((entry) => entry.tests > 0);
+  elements.leaderboardList.replaceChildren();
+  elements.leaderboardEmpty.hidden = hasScores;
+  elements.leaderboardList.parentElement.hidden = !hasScores;
+  if (!hasScores) return;
+
+  entries.forEach((entry, index) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "leaderboard-row";
+    row.classList.toggle("current", entry.participant.id === state.cloud.group.participantId);
+    row.setAttribute("role", "row");
+
+    const player = document.createElement("span");
+    player.className = "leaderboard-player";
+    const rank = document.createElement("span");
+    rank.className = "leaderboard-rank";
+    rank.textContent = index + 1;
+    const identity = document.createElement("span");
+    const name = document.createElement("strong");
+    name.textContent = entry.participant.nickname;
+    const marker = document.createElement("small");
+    marker.textContent = entry.participant.id === state.cloud.group.participantId ? "我" : "查看历史";
+    identity.append(name, marker);
+    player.append(rank, identity);
+    row.append(
+      player,
+      createLeaderboardValue(entry.tests, "次"),
+      createLeaderboardValue(entry.totalQuestions, `${entry.totalCorrect}题正确`),
+      createLeaderboardValue(`${entry.accuracy}%`, "累计"),
+      createLeaderboardValue(
+        entry.secondsPerQuestion ? `${entry.secondsPerQuestion.toFixed(1)}秒` : "--",
+        "平均",
+      ),
+    );
+    row.addEventListener("click", () => renderMemberHistory(entry.participant));
+    elements.leaderboardList.append(row);
+  });
+}
+
+function createLeaderboardValue(value, label) {
+  const wrapper = document.createElement("span");
+  wrapper.className = "leaderboard-value";
+  const strong = document.createElement("strong");
+  strong.textContent = value;
+  const caption = document.createElement("span");
+  caption.textContent = label;
+  wrapper.append(strong, caption);
+  return wrapper;
+}
+
+function renderMemberHistory(participant) {
+  const attempts = state.cloud.attempts
+    .filter((attempt) => attempt.participant_id === participant.id)
+    .slice(0, 30);
+  const formalTests = attempts.filter((attempt) => attempt.attempt_type === "test");
+  const totalQuestions = formalTests.reduce((sum, item) => sum + item.question_count, 0);
+  const totalCorrect = formalTests.reduce((sum, item) => sum + item.correct_count, 0);
+  const accuracy = totalQuestions ? Math.round(totalCorrect / totalQuestions * 100) : 0;
+
+  elements.memberHistoryHeading.textContent = `${participant.nickname} 的历史表现`;
+  elements.memberHistorySummary.textContent = formalTests.length
+    ? `${formalTests.length} 次测试 · ${totalQuestions} 题 · 累计准确率 ${accuracy}%`
+    : "还没有正式测试记录";
+  elements.memberHistoryList.replaceChildren();
+  if (!attempts.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-block";
+    empty.textContent = "该用户暂时没有历史记录。";
+    elements.memberHistoryList.append(empty);
+  } else {
+    for (const attempt of attempts) {
+      elements.memberHistoryList.append(createHistoryRow({
+        type: attempt.attempt_type,
+        count: attempt.question_count,
+        correct: attempt.correct_count,
+        accuracy: attempt.accuracy,
+        duration: attempt.duration_seconds,
+        createdAt: attempt.completed_at,
+      }));
+    }
+  }
+  elements.memberHistory.hidden = false;
+  elements.memberHistory.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function syncResultOnline(result) {
+  if (!state.cloud.group || !cloudService()) return;
+  try {
+    await cloudService().syncAttempt(result);
+    if (state.view === "ranking") await refreshRankingData(false);
+  } catch (_) {
+    showToast("成绩已保存在本机，将在网络恢复后重试同步");
+  }
+}
+
 function updateGlobalBadges() {
   elements.wrongNavBadge.textContent = state.wrong.length > 99 ? "99+" : state.wrong.length;
   elements.wrongNavBadge.hidden = state.wrong.length === 0;
@@ -563,9 +901,12 @@ async function sharePractice() {
   const url = new URL(location.href);
   url.hash = "home";
   url.searchParams.set("questions", selectedQuestionCount());
+  if (state.cloud.group) url.searchParams.set("group", state.cloud.group.inviteCode);
   const shareData = {
     title: "乘法小站",
-    text: `来做一轮 ${selectedQuestionCount()} 题九九乘法测试吧！`,
+    text: state.cloud.group
+      ? `加入「${state.cloud.group.name}」，来做一轮 ${selectedQuestionCount()} 题九九乘法测试吧！`
+      : `来做一轮 ${selectedQuestionCount()} 题九九乘法测试吧！`,
     url: url.toString(),
   };
   if (navigator.share) {
@@ -604,6 +945,20 @@ elements.reviewResult.addEventListener("click", () => {
 });
 elements.reviewAll.addEventListener("click", () => startReview(state.wrong));
 elements.clearHistory.addEventListener("click", clearHistory);
+elements.createGroupForm.addEventListener("submit", handleCreateGroup);
+elements.joinGroupForm.addEventListener("submit", handleJoinGroup);
+elements.joinInviteCode.addEventListener("input", () => {
+  elements.joinInviteCode.value = elements.joinInviteCode.value
+    .replace(/[^a-z0-9]/gi, "")
+    .toUpperCase()
+    .slice(0, 8);
+});
+elements.refreshRanking.addEventListener("click", () => refreshRankingData());
+elements.shareGroup.addEventListener("click", sharePractice);
+elements.leaveGroup.addEventListener("click", leaveCurrentGroup);
+elements.closeMemberHistory.addEventListener("click", () => {
+  elements.memberHistory.hidden = true;
+});
 
 for (const button of elements.navButtons) {
   button.addEventListener("click", (event) => {
@@ -614,7 +969,7 @@ for (const button of elements.navButtons) {
 
 window.addEventListener("hashchange", () => {
   const requested = location.hash.slice(1);
-  if (["home", "wrong", "history"].includes(requested) && requested !== state.view) {
+  if (["home", "wrong", "history", "ranking"].includes(requested) && requested !== state.view) {
     showView(requested);
   }
 });
@@ -622,7 +977,11 @@ window.addEventListener("hashchange", () => {
 const queryCount = Number(new URLSearchParams(location.search).get("questions"));
 if ([10, 20].includes(queryCount)) setSelectedQuestionCount(queryCount);
 updateGlobalBadges();
-const initialView = ["home", "wrong", "history"].includes(location.hash.slice(1))
-  ? location.hash.slice(1)
-  : "home";
+const requestedInitialView = location.hash.slice(1);
+const initialView = pendingInviteCode()
+  ? "ranking"
+  : ["home", "wrong", "history", "ranking"].includes(requestedInitialView)
+    ? requestedInitialView
+    : "home";
 showView(initialView);
+initializeCloud();
