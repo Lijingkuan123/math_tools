@@ -928,7 +928,7 @@ async function sharePractice() {
   url.searchParams.set("questions", selectedQuestionCount());
   if (state.cloud.group) url.searchParams.set("group", state.cloud.group.inviteCode);
   const shareData = {
-    title: "乘法小站",
+    title: "优意学习-数学小站",
     text: state.cloud.group
       ? `加入「${state.cloud.group.name}」，来做一轮 ${selectedQuestionCount()} 题九九乘法测试吧！`
       : `来做一轮 ${selectedQuestionCount()} 题九九乘法测试吧！`,
