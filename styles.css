@@ -100,6 +100,22 @@ h2 { font-size: 18px; line-height: 1.4; }
 
 .share-button:hover { background: rgb(255 255 255 / 8%); }
 
+.booklet-link {
+  min-height: 38px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgb(255 255 255 / 25%);
+  border-radius: 5px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.booklet-link:hover { background: rgb(255 255 255 / 8%); }
+
 .app-shell {
   width: min(1120px, 100%);
   margin: 0 auto;
@@ -606,16 +622,130 @@ h2 { font-size: 18px; line-height: 1.4; }
 }
 .member-history .section-heading { align-items: flex-start; }
 
+.crossword-view { max-width: 1120px; margin: 0 auto; }
+.crossword-heading { align-items: flex-end; }
+.crossword-heading-actions { display: flex; gap: 9px; }
+.crossword-heading-actions .button span,
+.crossword-downloads .button span { margin-right: 5px; font-size: 17px; }
+.crossword-workspace {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+.crossword-controls {
+  position: sticky;
+  top: 86px;
+  padding: 22px;
+  display: grid;
+  gap: 24px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.crossword-controls fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.crossword-controls legend {
+  margin-bottom: 10px;
+  color: #40504c;
+  font-size: 13px;
+  font-weight: 800;
+}
+.option-control {
+  padding: 4px;
+  display: grid;
+  gap: 4px;
+  background: #e1e8e4;
+  border-radius: 6px;
+}
+.option-control label { min-width: 0; cursor: pointer; }
+.option-control input { position: absolute; opacity: 0; pointer-events: none; }
+.option-control span {
+  min-height: 38px;
+  padding: 7px 8px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  color: #53645f;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 750;
+}
+.option-control input:checked + span {
+  background: var(--paper);
+  color: var(--green-dark);
+  box-shadow: var(--shadow);
+}
+.option-control input:focus-visible + span { outline: 3px solid rgb(47 100 163 / 28%); }
+.mode-control { grid-template-columns: 1fr; }
+.count-options { grid-template-columns: repeat(3, 1fr); }
+.answer-toggle {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.answer-toggle strong, .answer-toggle small { display: block; }
+.answer-toggle strong { font-size: 13px; }
+.answer-toggle small { margin-top: 3px; color: var(--muted); font-size: 11px; }
+.answer-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.answer-toggle i {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  background: #bdc8c3;
+  transition: background-color 150ms ease;
+}
+.answer-toggle i::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 18%);
+  transition: transform 150ms ease;
+}
+.answer-toggle input:checked + i { background: var(--green); }
+.answer-toggle input:checked + i::after { transform: translateX(18px); }
+.answer-toggle input:focus-visible + i { outline: 3px solid rgb(47 100 163 / 28%); outline-offset: 2px; }
+.crossword-downloads { display: grid; gap: 8px; }
+.crossword-downloads .button { width: 100%; }
+.worksheet-preview { min-width: 0; margin: 0; }
+.worksheet-paper {
+  padding: 18px;
+  background: #dfe5e1;
+  border: 1px solid #ccd5d0;
+  border-radius: 6px;
+}
+.worksheet-paper canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(24 40 37 / 13%);
+}
+.worksheet-preview figcaption {
+  min-height: 36px;
+  padding: 10px 4px 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 12px;
+}
+
 .bottom-nav {
   position: fixed;
   left: 50%;
   bottom: 18px;
   z-index: 30;
-  width: min(500px, calc(100% - 28px));
+  width: min(560px, calc(100% - 28px));
   min-height: 62px;
   padding: 6px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   transform: translateX(-50%);
   background: #17332d;
   border: 1px solid rgb(255 255 255 / 10%);
@@ -693,6 +823,8 @@ h2 { font-size: 18px; line-height: 1.4; }
   .history-overview > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
   .group-banner { grid-template-columns: 1fr auto; }
   .group-actions { grid-column: 1 / -1; }
+  .crossword-workspace { grid-template-columns: 220px minmax(0, 1fr); gap: 16px; }
+  .crossword-controls { padding: 18px; }
 }
 
 @media (max-width: 520px) {
@@ -717,7 +849,7 @@ h2 { font-size: 18px; line-height: 1.4; }
   .community-strip { padding: 15px 16px; grid-template-columns: 38px 1fr auto; }
   .community-strip .button { padding-inline: 11px; }
   .cloud-state-icon { width: 36px; height: 36px; }
-  .recent-section, .wrong-view, .history-view, .ranking-view { padding: 0 16px; }
+  .recent-section, .wrong-view, .history-view, .ranking-view, .crossword-view { padding: 0 16px; }
   .test-view, .result-view { padding: 14px 12px 0; }
   .test-toolbar { top: 70px; margin-bottom: 12px; }
   .test-meta strong { font-size: 14px; }
@@ -759,10 +891,29 @@ h2 { font-size: 18px; line-height: 1.4; }
   .leaderboard-row > :nth-child(2),
   .leaderboard-row > :nth-child(5) { display: none; }
   .leaderboard-header, .leaderboard-row { padding-inline: 12px; }
+  .crossword-heading { gap: 18px; }
+  .crossword-heading-actions { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .crossword-workspace { grid-template-columns: 1fr; }
+  .crossword-controls { position: static; padding: 18px 16px; gap: 20px; }
+  .mode-control { grid-template-columns: repeat(3, 1fr); }
+  .worksheet-paper { margin-inline: -16px; padding: 10px; border-inline: 0; border-radius: 0; }
   .bottom-nav button { font-size: 11px; }
   .bottom-nav { bottom: max(10px, env(safe-area-inset-bottom)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
+}
+
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  html, body { background: #fff; }
+  .app-header, .bottom-nav, .crossword-heading, .crossword-controls,
+  .worksheet-preview figcaption, .toast, .confirm-dialog { display: none !important; }
+  .app-shell { width: 100%; margin: 0; padding: 0; }
+  .view:not(.crossword-view) { display: none !important; }
+  .crossword-view { max-width: none; padding: 0; }
+  .crossword-workspace { display: block; }
+  .worksheet-paper { padding: 0; border: 0; border-radius: 0; background: #fff; }
+  .worksheet-paper canvas { width: 100%; box-shadow: none; }
 }

@@ -6,6 +6,8 @@ const STORAGE_KEYS = {
   active: "multiplication-active-v1",
 };
 
+const NAV_VIEWS = ["home", "crossword", "wrong", "history", "ranking"];
+
 const elements = {
   views: [...document.querySelectorAll("[data-view]")],
   navButtons: [...document.querySelectorAll("[data-nav]")],
@@ -194,7 +196,7 @@ function showView(viewName) {
   }
   elements.bottomNav.hidden = viewName === "test";
 
-  if (["home", "wrong", "history", "ranking"].includes(viewName)) {
+  if (NAV_VIEWS.includes(viewName)) {
     const hash = `#${viewName}`;
     if (location.hash !== hash) history.replaceState(null, "", hash);
   }
@@ -969,7 +971,7 @@ for (const button of elements.navButtons) {
 
 window.addEventListener("hashchange", () => {
   const requested = location.hash.slice(1);
-  if (["home", "wrong", "history", "ranking"].includes(requested) && requested !== state.view) {
+  if (NAV_VIEWS.includes(requested) && requested !== state.view) {
     showView(requested);
   }
 });
@@ -980,7 +982,7 @@ updateGlobalBadges();
 const requestedInitialView = location.hash.slice(1);
 const initialView = pendingInviteCode()
   ? "ranking"
-  : ["home", "wrong", "history", "ranking"].includes(requestedInitialView)
+  : NAV_VIEWS.includes(requestedInitialView)
     ? requestedInitialView
     : "home";
 showView(initialView);

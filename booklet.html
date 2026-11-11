@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="30天加减乘除混合运算打印练习册">
+  <title>30天混合运算打印册</title>
+  <link rel="stylesheet" href="./booklet.css">
+</head>
+<body>
+  <main class="booklet-app">
+    <section class="screen-controls" aria-label="打印册控制面板">
+      <a class="back-link" href="./index.html">← 返回数学小站</a>
+      <div class="controls-heading">
+        <div>
+          <p class="eyebrow">纸笔练习</p>
+          <h1>30 天混合运算打印册</h1>
+          <p class="subtitle">每天 30 道加减乘除混合运算，共 900 道题。打印后每天完成一页。</p>
+        </div>
+        <div class="control-actions">
+          <button class="button secondary" id="regenerateButton" type="button">↻ 换一套题</button>
+          <button class="button primary" id="printButton" type="button">▣ 打印 / 导出 PDF</button>
+        </div>
+      </div>
+      <div class="print-note">
+        <span aria-hidden="true">✓</span>
+        <span>当前预览共 <strong id="questionTotal">900</strong> 道题，打印设置请选择 A4、纵向、缩放 100%。</span>
+      </div>
+    </section>
+
+    <section class="booklet" id="booklet" aria-label="30天练习题预览"></section>
+  </main>
+  <script src="./crossword.js"></script>
+  <script src="./booklet.js"></script>
+</body>
+</html>

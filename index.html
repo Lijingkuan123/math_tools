@@ -21,6 +21,10 @@
       <span aria-hidden="true">↗</span>
       分享练习
     </button>
+    <a class="booklet-link" href="./booklet.html">
+      <span aria-hidden="true">▤</span>
+      30天打印册
+    </a>
   </header>
 
   <main class="app-shell">
@@ -197,6 +201,93 @@
       <div class="history-list" id="historyList"></div>
     </section>
 
+    <section class="view crossword-view" id="crosswordView" data-view="crossword" hidden>
+      <div class="page-heading crossword-heading">
+        <div>
+          <p class="eyebrow">纸笔练习</p>
+          <h1>算式填字</h1>
+          <p>生成横竖交叉的计算题，也可一次性下载 30 天 × 每天 30 题的棋盘练习 PDF。</p>
+        </div>
+        <div class="crossword-heading-actions">
+          <a class="button secondary" href="./30天混合运算练习册.pdf" download="30天混合运算练习册.pdf">
+            <span aria-hidden="true">↓</span> 下载30天 PDF
+          </a>
+          <button class="button secondary" id="printCrosswordButton" type="button">
+            <span aria-hidden="true">▣</span> 打印
+          </button>
+          <button class="button primary" id="generateCrosswordButton" type="button">
+            <span aria-hidden="true">↻</span> 换一题
+          </button>
+        </div>
+      </div>
+
+      <div class="crossword-workspace">
+        <aside class="crossword-controls" aria-label="算式填字设置">
+          <fieldset>
+            <legend>计算类别</legend>
+            <div class="option-control mode-control">
+              <label>
+                <input type="radio" name="crosswordMode" value="mixed" checked>
+                <span>混合</span>
+              </label>
+              <label>
+                <input type="radio" name="crosswordMode" value="addsub">
+                <span>100以内加减</span>
+              </label>
+              <label>
+                <input type="radio" name="crosswordMode" value="muldiv">
+                <span>九九乘除</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>算式数量</legend>
+            <div class="option-control count-options">
+              <label>
+                <input type="radio" name="crosswordCount" value="10">
+                <span>10 道</span>
+              </label>
+              <label>
+                <input type="radio" name="crosswordCount" value="20" checked>
+                <span>20 道</span>
+              </label>
+              <label>
+                <input type="radio" name="crosswordCount" value="30">
+                <span>30 道</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <label class="answer-toggle">
+            <span>
+              <strong>显示答案</strong>
+              <small>预览空格中的数字</small>
+            </span>
+            <input id="crosswordAnswerToggle" type="checkbox">
+            <i aria-hidden="true"></i>
+          </label>
+
+          <div class="crossword-downloads">
+            <button class="button secondary" id="downloadCrosswordButton" type="button">
+              <span aria-hidden="true">↓</span> 下载题目 PNG
+            </button>
+            <button class="button secondary" id="downloadCrosswordAnswerButton" type="button">
+              <span aria-hidden="true">✓</span> 下载答案 PNG
+            </button>
+          </div>
+        </aside>
+
+        <figure class="worksheet-preview">
+          <div class="worksheet-paper">
+            <canvas id="crosswordCanvas" width="1240" height="1754"
+                    role="img" aria-label="算式填字练习题预览"></canvas>
+          </div>
+          <figcaption id="crosswordStatus" aria-live="polite">正在生成题目…</figcaption>
+        </figure>
+      </div>
+    </section>
+
     <section class="view ranking-view" id="rankingView" data-view="ranking" hidden>
       <div class="page-heading ranking-heading">
         <div>
@@ -308,6 +399,7 @@
 
   <nav class="bottom-nav" id="bottomNav" aria-label="主要导航">
     <button class="active" type="button" data-nav="home"><span aria-hidden="true">⌂</span>首页</button>
+    <button type="button" data-nav="crossword"><span aria-hidden="true">⊞</span>出题</button>
     <button type="button" data-nav="wrong"><span aria-hidden="true">×</span>错题集<em id="wrongNavBadge" hidden>0</em></button>
     <button type="button" data-nav="history"><span aria-hidden="true">▥</span>记录</button>
     <button type="button" data-nav="ranking"><span aria-hidden="true">♜</span>排行</button>
@@ -329,6 +421,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js" defer></script>
   <script src="./supabase-config.js" defer></script>
   <script src="./supabase-service.js" defer></script>
+  <script src="./crossword.js" defer></script>
   <script src="./app.js" defer></script>
 </body>
 </html>
