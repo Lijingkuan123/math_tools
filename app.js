@@ -6,7 +6,7 @@ const STORAGE_KEYS = {
   active: "multiplication-active-v1",
 };
 
-const NAV_VIEWS = ["home", "crossword", "wrong", "history", "ranking"];
+const NAV_VIEWS = ["home", "multiplication", "crossword", "wrong", "history", "ranking"];
 
 const elements = {
   views: [...document.querySelectorAll("[data-view]")],
@@ -201,7 +201,8 @@ function showView(viewName) {
     if (location.hash !== hash) history.replaceState(null, "", hash);
   }
 
-  if (viewName === "home") renderHome();
+  if (viewName === "home" || viewName === "multiplication") renderHome();
+  if (viewName === "home") renderHomeRanking();
   if (viewName === "wrong") renderWrongBook();
   if (viewName === "history") renderHistory();
   if (viewName === "ranking") renderRanking();
@@ -464,10 +465,13 @@ function renderResult() {
 }
 
 function renderHome() {
-  const average = state.history.length
-    ? Math.round(state.history.reduce((sum, item) => sum + item.accuracy, 0) / state.history.length)
+  const crosswordHistory = readStorage("crossword-history-v1", []);
+  const records = [...state.history, ...(Array.isArray(crosswordHistory) ? crosswordHistory : [])]
+    .sort((a, b) => b.createdAt - a.createdAt);
+  const average = records.length
+    ? Math.round(records.reduce((sum, item) => sum + item.accuracy, 0) / records.length)
     : null;
-  elements.totalTests.textContent = state.history.length;
+  elements.totalTests.textContent = records.length;
   elements.averageAccuracy.textContent = average === null ? "--" : average;
   elements.averageAccuracyUnit.textContent = average === null ? "" : "%";
   elements.wrongCount.textContent = state.wrong.length;
@@ -478,8 +482,8 @@ function renderHome() {
   }
 
   elements.recentHistory.replaceChildren();
-  elements.homeEmptyHistory.hidden = state.history.length > 0;
-  for (const item of state.history.slice(0, 3)) {
+  elements.homeEmptyHistory.hidden = records.length > 0;
+  for (const item of records.slice(0, 10)) {
     elements.recentHistory.append(createHistoryRow(item));
   }
   renderCloudHomeStatus();
@@ -493,7 +497,7 @@ function createHistoryRow(item) {
   const main = document.createElement("div");
   main.className = "history-main";
   const title = document.createElement("strong");
-  title.textContent = item.type === "review" ? "错题复习" : `${item.count} 题测试`;
+  title.textContent = item.type === "crossword" ? `算式填字 · ${item.count} 题` : item.type === "review" ? `九九乘法 · 错题复习 ${item.count} 题` : `九九乘法 · ${item.count} 题测试`;
   const date = document.createElement("span");
   date.textContent = formatDate(item.createdAt);
   main.append(title, date);
@@ -572,6 +576,7 @@ function applyCloudSnapshot(snapshot) {
   state.cloud.group = snapshot?.group || null;
   state.cloud.loading = false;
   renderCloudHomeStatus();
+  renderHomeRanking();
 }
 
 async function initializeCloud() {
@@ -608,6 +613,23 @@ function renderCloudHomeStatus() {
   } else {
     elements.cloudHomeStatus.textContent = "创建或加入练习组后即可同步成绩。";
   }
+}
+
+function renderHomeRanking() {
+  const preview = document.querySelector("#homeRankingPreview");
+  preview.replaceChildren();
+  if (!state.cloud.group || state.cloud.error) return;
+  const entries = leaderboardEntries().filter(entry => entry.tests > 0).slice(0, 3);
+  if (!entries.length) return;
+  entries.forEach((entry, index) => {
+    const row = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = `${index + 1}. ${entry.participant.nickname}`;
+    const score = document.createElement("span");
+    score.textContent = `答对 ${entry.totalCorrect} 题 · 准确率 ${entry.accuracy}%`;
+    row.append(name, score);
+    preview.append(row);
+  });
 }
 
 function renderRanking() {
@@ -728,6 +750,7 @@ async function refreshRankingData(showFeedback = true) {
   } finally {
     elements.refreshRanking.disabled = false;
     if (state.view === "ranking") renderLeaderboard();
+    renderHomeRanking();
   }
 }
 
@@ -938,9 +961,9 @@ async function sharePractice() {
 elements.startTest.addEventListener("click", startNewTest);
 elements.resumeTest.addEventListener("click", () => showView("test"));
 elements.share.addEventListener("click", sharePractice);
-elements.leaveTest.addEventListener("click", () => showView("home"));
+elements.leaveTest.addEventListener("click", () => showView("multiplication"));
 elements.quizForm.addEventListener("submit", submitQuiz);
-elements.newTest.addEventListener("click", () => showView("home"));
+elements.newTest.addEventListener("click", () => showView("multiplication"));
 elements.reviewResult.addEventListener("click", () => {
   const questions = state.lastResult?.wrongQuestions || [];
   startReview(questions);

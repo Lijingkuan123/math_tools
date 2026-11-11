@@ -745,7 +745,7 @@ h2 { font-size: 18px; line-height: 1.4; }
   min-height: 62px;
   padding: 6px;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   transform: translateX(-50%);
   background: #17332d;
   border: 1px solid rgb(255 255 255 / 10%);
@@ -917,3 +917,33 @@ h2 { font-size: 18px; line-height: 1.4; }
   .worksheet-paper { padding: 0; border: 0; border-radius: 0; background: #fff; }
   .worksheet-paper canvas { width: 100%; box-shadow: none; }
 }
+
+/* Online answers sit over the same cells used by the printable worksheet. */
+.crossword-online-actions { display: grid; gap: 8px; }
+.crossword-online-actions p { margin: 0; font-size: 13px; color: var(--muted); }
+.worksheet-paper { overflow-x: auto; }
+.worksheet-sheet { position: relative; }
+.crossword-inputs { position: absolute; inset: 0; }
+.crossword-inputs[hidden] { display: none; }
+.crossword-inputs input {
+  position: absolute; box-sizing: border-box; margin: 0; padding: 0;
+  border: 2px solid #367ca0; border-radius: 3px; background: #edf8ff;
+  color: #17332d; text-align: center; font-size: clamp(12px, 2vw, 20px);
+  font-weight: 700; outline-offset: 1px;
+}
+.crossword-inputs input.is-correct { background: #d5f3d9; border-color: #27833b; }
+.crossword-inputs input.is-wrong { background: #ffe1df; border-color: #bd3a34; }
+@media (max-width: 700px) { .worksheet-sheet { min-width: 640px; } }
+@media print { .crossword-inputs { display: none !important; } .worksheet-sheet { min-width: 0; } }
+
+.home-welcome { margin: 24px 0; }
+.home-welcome p:last-child { margin-top: 8px; color: var(--muted); }
+.home-features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.home-features button { text-align: left; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 20px; cursor: pointer; }
+.home-features strong, .home-features span { display: block; }
+.home-features strong { color: var(--green-dark); font-size: 18px; }
+.home-features span { margin-top: 7px; color: var(--muted); font-size: 13px; }
+.home-ranking-preview > div { display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.home-ranking-preview span { color: var(--muted); font-size: 13px; }
+.home-features em { font-style: normal; font-size: 12px; color: var(--coral); }
+@media (max-width: 700px) { .home-welcome, .home-features, .home-ranking-preview { margin-left: 16px; margin-right: 16px; } .home-features button { padding: 15px 12px; } }

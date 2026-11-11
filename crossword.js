@@ -372,6 +372,15 @@
     context.roundRect(x, y, width, height, radius);
   }
 
+  function worksheetLayout(puzzle) {
+    const bounds = puzzle.bounds;
+    const columns = bounds.maxColumn - bounds.minColumn + 1;
+    const rows = bounds.maxRow - bounds.minRow + 1;
+    const size = Math.min(94, 1040 / columns, 1190 / rows);
+    return { bounds, size, x: (CANVAS_WIDTH - size * columns) / 2,
+      y: 382 + (1190 - size * rows) / 2 };
+  }
+
   function drawWorksheet(puzzle, canvas, showAnswers = false) {
     if (!puzzle || !canvas) return;
     const context = canvas.getContext("2d");
@@ -411,16 +420,7 @@
     context.fillText("日期：________________", 480, 328);
     context.fillText("用时：________________", 860, 328);
 
-    const bounds = puzzle.bounds;
-    const columnCount = bounds.maxColumn - bounds.minColumn + 1;
-    const rowCount = bounds.maxRow - bounds.minRow + 1;
-    const puzzleWidth = 1040;
-    const puzzleHeight = 1190;
-    const cellSize = Math.min(94, puzzleWidth / columnCount, puzzleHeight / rowCount);
-    const drawnWidth = cellSize * columnCount;
-    const drawnHeight = cellSize * rowCount;
-    const originX = (CANVAS_WIDTH - drawnWidth) / 2;
-    const originY = 382 + (puzzleHeight - drawnHeight) / 2;
+    const { bounds, size: cellSize, x: originX, y: originY } = worksheetLayout(puzzle);
 
     context.lineWidth = Math.max(2.5, cellSize * 0.042);
     context.strokeStyle = "#17211f";
@@ -474,7 +474,64 @@
     const status = document.querySelector("#crosswordStatus");
     if (!canvas || !generateButton) return;
 
+    const inputLayer = document.querySelector("#crosswordInputs");
+    const result = document.querySelector("#crosswordResult");
     let currentPuzzle = null;
+    let startedAt = 0;
+    let recorded = false;
+
+    function buildInputs() {
+      inputLayer.replaceChildren();
+      const layout = worksheetLayout(currentPuzzle);
+      const blanks = [...currentPuzzle.blankKeys].map(key => currentPuzzle.cells.get(key))
+        .sort((a, b) => a.row - b.row || a.column - b.column);
+      blanks.forEach((cell, index) => {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.inputMode = "numeric";
+        input.autocomplete = "off";
+        input.maxLength = 3;
+        input.setAttribute("aria-label", `第 ${index + 1} 个空格`);
+        input.dataset.answer = cell.token;
+        input.style.left = `${100 * (layout.x + (cell.column - layout.bounds.minColumn) * layout.size) / CANVAS_WIDTH}%`;
+        input.style.top = `${100 * (layout.y + (cell.row - layout.bounds.minRow) * layout.size) / CANVAS_HEIGHT}%`;
+        input.style.width = `${100 * layout.size / CANVAS_WIDTH}%`;
+        input.style.height = `${100 * layout.size / CANVAS_HEIGHT}%`;
+        input.addEventListener("input", () => {
+          input.value = input.value.replace(/[^0-9]/g, "");
+          input.classList.remove("is-correct", "is-wrong");
+          result.textContent = "填写完成后点击检查答案。";
+        });
+        inputLayer.append(input);
+      });
+      result.textContent = "点击题目中的空格填写数字。";
+    }
+
+    function checkAnswers() {
+      const inputs = [...inputLayer.querySelectorAll("input")];
+      let correct = 0, empty = 0;
+      for (const input of inputs) {
+        const value = input.value.trim();
+        const isCorrect = value !== "" && Number(value) === Number(input.dataset.answer);
+        input.classList.toggle("is-correct", isCorrect);
+        input.classList.toggle("is-wrong", value !== "" && !isCorrect);
+        if (isCorrect) correct += 1;
+        if (!value) empty += 1;
+      }
+      result.textContent = `答对 ${correct} / ${inputs.length} 题${empty ? `，还有 ${empty} 题未填写` : ""}。${correct === inputs.length ? " 全部答对了！" : ""}`;
+      if (!empty && !recorded) {
+        try {
+          const key = "crossword-history-v1";
+          const previous = JSON.parse(localStorage.getItem(key) || "[]");
+          const item = { type: "crossword", count: inputs.length, correct,
+            accuracy: Math.round(correct / inputs.length * 100),
+            duration: Math.floor((Date.now() - startedAt) / 1000), createdAt: Date.now() };
+          localStorage.setItem(key, JSON.stringify([item, ...(Array.isArray(previous) ? previous : [])].slice(0, 200)));
+          recorded = true;
+          result.textContent += " 本次首次完整检查已记录。";
+        } catch (_) { result.textContent += " 当前浏览器无法保存成绩。"; }
+      }
+    }
 
     function render() {
       drawWorksheet(currentPuzzle, canvas, answerToggle.checked);
@@ -496,7 +553,11 @@
         status.textContent = "本次排版未完成，请重新生成";
         return;
       }
+      startedAt = Date.now();
+      recorded = false;
       answerToggle.checked = false;
+      inputLayer.hidden = false;
+      buildInputs();
       render();
     }
 
@@ -521,7 +582,18 @@
     downloadQuestionButton.addEventListener("click", () => download(false));
     downloadAnswerButton.addEventListener("click", () => download(true));
     printButton.addEventListener("click", () => window.print());
-    answerToggle.addEventListener("change", render);
+    document.querySelector("#checkCrosswordButton").addEventListener("click", checkAnswers);
+    document.querySelector("#clearCrosswordButton").addEventListener("click", () => {
+      inputLayer.querySelectorAll("input").forEach(input => {
+        input.value = "";
+        input.classList.remove("is-correct", "is-wrong");
+      });
+      result.textContent = "已清空填写。";
+    });
+    answerToggle.addEventListener("change", () => {
+      inputLayer.hidden = answerToggle.checked;
+      render();
+    });
     document.querySelectorAll('input[name="crosswordMode"], input[name="crosswordCount"]')
       .forEach((input) => input.addEventListener("change", generate));
 
